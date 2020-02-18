@@ -1,0 +1,38 @@
+[
+{'experiment': 'TbOE1260',
+'g_version': 'tb927_2',
+'base_fastq':'FCH5YJ2CCX2_L4_wHAXPI122558-36_',
+'library':'OEtbrucei'},
+
+{'experiment': 'TbOE266',
+'g_version': 'tb927_2',
+'base_fastq':'FCH5YG3CCX2_L5_wHAXPI122555-33_',
+'library':'OEtbrucei'},
+
+{'experiment': 'TbOE314',
+'g_version': 'tb927_2',
+'base_fastq':'FCH5YJ2CCX2_L4_wHAXPI122553-34_',
+'library':'OEtbrucei'},
+
+{'experiment': 'TbOE796',
+'g_version': 'tb927_2',
+'base_fastq':'FCH5YG3CCX2_L5_wHAXPI122561-21_',
+'library':'OEtbrucei'},
+
+{'experiment': 'TbOE8311',
+'g_version': 'tb927_2',
+'base_fastq':'FCH5YJ2CCX2_L4_wHAXPI122552-18_',
+'library':'OEtbrucei'},
+
+{'experiment': 'TbOEDUP03',
+'g_version': 'tb927_2',
+'base_fastq':'FCH5YG3CCX2_L5_wHAXPI122557-17_',
+'library':'OEtbrucei'},
+
+{'experiment': 'TbOENF3B',
+'g_version': 'tb927_2',
+'base_fastq':'FCH5YG3CCX2_L5_wHAXPI122559-7_',
+'library':'OEtbrucei'},
+
+]
+
