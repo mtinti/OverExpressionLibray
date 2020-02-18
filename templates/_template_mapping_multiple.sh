@@ -174,10 +174,11 @@ $path_out$base_fastq'rr_barcode_coverage_d.bed' '{experiment}/'$base_fastq '{exp
 jupyter nbconvert --to notebook --execute assemble_{experiment}.ipynb --ExecutePreprocessor.timeout=600
 rm assemble_{experiment}.ipynb
 jupyter nbconvert --output-dir={experiment} --to html_toc assemble_{experiment}.nbconvert.ipynb
-
+mw assemble_{experiment}.nbconvert.ipynb {experiment}
 
 conda activate visCov
 jupyter nbconvert --to notebook --execute coverage_{experiment}.ipynb --ExecutePreprocessor.timeout=600
 rm coverage_{experiment}.ipynb
 jupyter nbconvert --output-dir={experiment} --to html_toc coverage_{experiment}.nbconvert.ipynb
+mw coverage_{experiment}.nbconvert.ipynb {experiment}
 
