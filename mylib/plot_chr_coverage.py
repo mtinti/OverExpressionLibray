@@ -35,7 +35,7 @@ def format_chr(chromo_id):
         #chromo_id = chromo_id.replace('kinetoplast','Kin')
         return chromo_id
     if chromo_id.startswith('Chr'):
-        chromo_id = '_'.join(chr'+chromo_id.split('_')[0:2])
+        chromo_id = '_'.join(chromo_id.split('_')[0:2])
         #chromo_id = chromo_id.replace('Ld','')
         #chromo_id = chromo_id.replace('kinetoplast','Kin')
         return chromo_id
