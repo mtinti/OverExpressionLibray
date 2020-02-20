@@ -260,7 +260,7 @@ dependencies:
     - pysam==0.15.3
     - reportlab==3.5.32
     - statistics==1.0.3.5
-    - svist4get==1.2.19
+    - svist4get==1.2.20
     - wand==0.5.7
 prefix: /homes/mtinti/miniconda3/envs/visCov
 

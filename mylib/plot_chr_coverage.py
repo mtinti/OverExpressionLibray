@@ -60,7 +60,7 @@ def make_plot(bed, save_to):
             offset += length
 
             medians[chromo] = counts['rolling'].median()
-            pylab.axvline(x=offset, ymin=0, ymax=1, ls='-.', alpha = 0.5)
+            pylab.axvline(x=offset, ymin=0, ymax=0.1, ls='-.', alpha = 0.5)
 
     #pylab.legend()
     pylab.xlabel("bp")
