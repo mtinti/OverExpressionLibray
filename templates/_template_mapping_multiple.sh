@@ -7,7 +7,7 @@
 #$ -e /dev/null
 
 
-grid_out='/homes/mtinti/RNAseq/viper-test/rit-seq/{experiment}'
+grid_out='/homes/mtinti/RNAseq/viper-test/OE_library/{experiment}'
 
 exec >$grid_out'/{base_fastq}.out.txt' 2>$grid_out'/{base_fastq}.err.txt'
 

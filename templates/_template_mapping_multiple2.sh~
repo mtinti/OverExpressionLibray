@@ -1,0 +1,215 @@
+#!/bin/bash
+#$ -l local_free=50G
+#$ -cwd
+#$ -V
+#$ -j y
+#$ -pe smp 8
+#$ -N {experiment}
+#$ -o '/homes/mtinti/RNAseq/viper-test/OE_library/{experiment}'
+#$ -e '/homes/mtinti/RNAseq/viper-test/OE_library/{experiment}'
+
+function timer()
+{
+    if [[ $# -eq 0 ]]; then
+        echo $(date '+%s')
+    else
+        local  stime=$1
+        etime=$(date '+%s')
+
+        if [[ -z "$stime" ]]; then stime=$etime; fi
+
+        dt=$((etime - stime))
+        ds=$((dt % 60))
+        dm=$(((dt / 60) % 60))
+        dh=$((dt / 3600))
+        printf '%d:%02d:%02d' $dh $dm $ds
+    fi
+}
+
+
+echo 'conda env loaded'
+experiment='{experiment}'
+genome='{_genome_}'
+base_fastq='{fastq}'
+library='{library}'
+
+
+tmr=$(timer)
+
+mkdir -p $TMPDIR'/genomes/'$genome'/' && cp -avr  'genomes/'$genome'/' $TMPDIR'/genomes/' 
+mkdir -p $TMPDIR'/'$experiment'/data/' && cp -avr  $experiment'/data/' $TMPDIR'/'$experiment'/'
+mkdir -p $TMPDIR'/FastQ_Screen_Genomes/' && cp -avr  'FastQ_Screen_Genomes/' $TMPDIR
+path_genome_index=$TMPDIR'/genomes/'$genome'/'$genome
+
+printf 'Elapsed time: %s\n' $(timer $tmr) 
+
+path_out=$TMPDIR'/'$experiment'/'
+mkdir $path_out'fastqc'
+mkdir $path_out'fastp'
+mkdir $path_out'fastqs'
+mkdir $path_out'multi_qc'
+mkdir $path_out'qualimap_results_rnaseq'
+mkdir $path_out'qualimap_results_bamqc'
+mkdir $path_out'unmap/'
+
+echo 'folder'
+ls -l $TMPDIR
+
+gtf_file=$path_genome_index'.gtf'
+gff_file=$path_genome_index'.gff'
+
+fastq_1=$path_out'data/'$base_fastq'1.fq.gz'
+fastq_2=$path_out'data/'$base_fastq'2.fq.gz'
+
+echo 'run fastqc' 
+fastqc  $fastq_1 -o $path_out'fastqc'
+fastqc  $fastq_2 -o $path_out'fastqc'
+
+inFileLength=$(echo $(zcat $fastq_1 | wc -l)/4|bc)
+echo 'inFileLength all: '$inFileLength
+
+echo 'run 0.2 parse fastq for barcodes' 
+python mylib/parse_barcode2.py $library $fastq_1 $fastq_2 $path_out'data/' $base_fastq $inFileLength
+
+echo 'run 1.3 align ff barcode reads'
+fastq_1=$path_out'data/'$base_fastq'1_ff_barcode.fq.gz'
+fastq_2=$path_out'data/'$base_fastq'2_ff_barcode.fq.gz'
+bowtie2 --very-sensitive-local -p 8 -x $path_genome_index -1 $fastq_1 -2 $fastq_2 | samtools view -bSu - | samtools sort -o $path_out$base_fastq'ff_barcode_sorted.bam'
+bedtools genomecov -ibam $path_out$base_fastq'ff_barcode_sorted.bam' -bg -pc > $path_out$base_fastq'ff_barcode_coverage_bg.bed'
+bedtools genomecov -ibam $path_out$base_fastq'ff_barcode_sorted.bam'  -d -pc > $path_out$base_fastq'ff_barcode_coverage_d.bed'
+
+echo 'run 1.3 align fr barcode reads' 
+fastq_1=$path_out'data/'$base_fastq'1_fr_barcode.fq.gz'
+fastq_2=$path_out'data/'$base_fastq'2_fr_barcode.fq.gz'
+bowtie2 --very-sensitive-local -p 8 -x $path_genome_index -1 $fastq_1 -2 $fastq_2 | samtools view -bSu - | samtools sort -o $path_out$base_fastq'fr_barcode_sorted.bam'
+bedtools genomecov -ibam $path_out$base_fastq'fr_barcode_sorted.bam' -bg -pc > $path_out$base_fastq'fr_barcode_coverage_bg.bed'
+bedtools genomecov -ibam $path_out$base_fastq'fr_barcode_sorted.bam'  -d -pc > $path_out$base_fastq'fr_barcode_coverage_d.bed'
+
+echo 'run 1.4 align rr barcode reads' 
+fastq_1=$path_out'data/'$base_fastq'1_rr_barcode.fq.gz'
+fastq_2=$path_out'data/'$base_fastq'2_rr_barcode.fq.gz'
+bowtie2 --very-sensitive-local -p 8 -x $path_genome_index -1 $fastq_1 -2 $fastq_2 | samtools view -bSu - | samtools sort -o $path_out$base_fastq'rr_barcode_sorted.bam'
+bedtools genomecov -ibam $path_out$base_fastq'rr_barcode_sorted.bam' -bg -pc > $path_out$base_fastq'rr_barcode_coverage_bg.bed'
+bedtools genomecov -ibam $path_out$base_fastq'rr_barcode_sorted.bam'  -d -pc > $path_out$base_fastq'rr_barcode_coverage_d.bed'
+
+echo 'run 1.5 align rf barcode reads' 
+fastq_1=$path_out'data/'$base_fastq'1_rf_barcode.fq.gz'
+fastq_2=$path_out'data/'$base_fastq'2_rf_barcode.fq.gz'
+bowtie2 --very-sensitive-local -p 8 -x $path_genome_index -1 $fastq_1 -2 $fastq_2 | samtools view -bSu - | samtools sort -o $path_out$base_fastq'rf_barcode_sorted.bam'
+bedtools genomecov -ibam $path_out$base_fastq'rf_barcode_sorted.bam' -bg -pc > $path_out$base_fastq'rf_barcode_coverage_bg.bed'
+bedtools genomecov -ibam $path_out$base_fastq'rf_barcode_sorted.bam'  -d -pc > $path_out$base_fastq'rf_barcode_coverage_d.bed'
+
+##align the fastq files to the transcript and convert to bam
+echo 'run 2.0 align all reads' 
+fastq_1=$path_out'data/'$base_fastq'1.fq.gz'
+fastq_2=$path_out'data/'$base_fastq'2.fq.gz'
+bowtie2 --very-sensitive-local -p 8 -x $path_genome_index -1 $fastq_1 -2 $fastq_2 | samtools view -bSu - | samtools sort -o $path_out$base_fastq'.sorted.bam'
+
+echo 'run 5'
+samtools index $path_out$base_fastq'.sorted.bam'
+
+
+echo 'run 7'
+bedtools genomecov -ibam $path_out$base_fastq'.sorted.bam' -bg -pc > $path_out$base_fastq'_coverage_bg.bed'
+echo 'run 7.0'
+bedtools genomecov -ibam $path_out$base_fastq'.sorted.bam' -d -pc > $path_out$base_fastq'_coverage_d.bed'
+echo 'run 7.1'
+python mylib/plot_chr_coverage.py $path_out$base_fastq'_coverage_d.bed' $path_out$base_fastq'coverage_d.png'
+
+
+unset DISPLAY
+
+echo 'run 8.1'
+qualimap rnaseq -bam $path_out$base_fastq'.sorted.bam'  -gtf $gtf_file -outdir $path_out'qualimap_results_rnaseq' -pe
+echo 'run 8.2'
+qualimap bamqc  -bam $path_out$base_fastq'.sorted.bam' -outdir $path_out'qualimap_results_bamqc'
+
+echo 'run 9'
+samtools view -u -f 12 -F 256 $path_out$base_fastq'.sorted.bam' | samtools sort -n -o $path_out$base_fastq'sortedname_unmap.bam'
+echo 'run 11'
+bamToFastq -i $path_out$base_fastq'sortedname_unmap.bam' -fq $path_out'unmap/'$base_fastq'.sorted_unmap_all_1.fastq' -fq2 $path_out'unmap/'$base_fastq'.sorted_unmap_all_2.fastq'
+
+echo 'run 10'
+sed -i "s@tmp_folder@$TMPDIR@g" $TMPDIR'/FastQ_Screen_Genomes/fastq_screen2.conf'
+
+fastq_screen --nohits $path_out'unmap/'$base_fastq'.sorted_unmap_all_1.fastq' $path_out'unmap/'$base_fastq'.sorted_unmap_all_2.fastq' \
+--conf $TMPDIR'/FastQ_Screen_Genomes/fastq_screen2.conf' --outdir $path_out'fastqs' --aligner bowtie2
+
+rm $path_out$base_fastq'sortedname_unmap.bam'
+gzip $path_out'unmap/'$base_fastq'.sorted_unmap_all_1.fastq'
+gzip $path_out'unmap/'$base_fastq'.sorted_unmap_all_2.fastq'
+
+
+echo 'run 12'
+
+echo 'run 11'
+featureCounts -p -B -C -M -T 8 -t transcript -g gene_id -a $path_genome_index'.gtf' -o $path_out'counts.txt' $path_out$base_fastq'.sorted.bam' $path_out$base_fastq'ff_barcode_sorted.bam' $path_out$base_fastq'fr_barcode_sorted.bam' $path_out$base_fastq'rr_barcode_sorted.bam' $path_out$base_fastq'rf_barcode_sorted.bam'
+
+#large peaks
+#macs2 callpeak -t $path_out$base_fastq'.sorted.bam' -f BAMPE --min-length 10000 --max-gap 5000 -q 0.01 --broad --outdir $path_out'macs2_'$base_fastq
+#short peaks
+macs2 callpeak -t $path_out$base_fastq'.sorted.bam' -f BAMPE --min-length 500 --max-gap 1000 -q 0.01 --broad --outdir $path_out'macs2_'$base_fastq
+
+echo 'run 15'
+multiqc $path_out'fastqc' $path_out'fastp' $path_out'fastqs' $path_out'qualimap_results_rnaseq' $path_out'qualimap_results_bamqc' $path_out'macs2_'$base_fastq -o $path_out'multi_qc'
+
+python mylib/plot_region_coverage.py $gff_file $path_out'macs2_'$base_fastq'/NA_peaks.xls' \
+$path_out$base_fastq'_coverage_d.bed' $path_out$base_fastq'ff_barcode_coverage_d.bed' \
+$path_out$base_fastq'fr_barcode_coverage_d.bed' $path_out$base_fastq'rf_barcode_coverage_d.bed' \
+$path_out$base_fastq'rr_barcode_coverage_d.bed' $path_out'/' $path_out'counts.txt' $experiment
+
+
+
+echo 'run 10'
+cp templates/assemble_template2.ipynb $TMPDIR
+sed -i "s@{_EXPERIMENT}@$experiment@g" $TMPDIR'/assemble_template2.ipynb'
+sed -i "s@{_FASTQ_HEADER}@$base_fastq@g" $TMPDIR'/assemble_template2.ipynb'
+sed -i "s@{genome}@$genome@g" $TMPDIR'/assemble_template2.ipynb'
+
+mkdir $TMPDIR'/mylib'
+cp mylib/plot_region_coverage.py  $TMPDIR'/mylib'
+
+jupyter nbconvert --to notebook --execute $TMPDIR'/assemble_template2.ipynb'  --ExecutePreprocessor.timeout=600
+rm $TMPDIR'/assemble_template2.ipynb'
+
+jupyter nbconvert --output-dir=$TMPDIR --to html_toc $TMPDIR'/assemble_template2.nbconvert.ipynb'
+
+
+cp -R svist4getConf/ $TMPDIR
+
+#conda activate visCov
+
+PATH=/homes/mtinti/miniconda3/envs/visCov/bin:$PATH
+
+cp templates/coverage_template2.ipynb $TMPDIR
+sed -i "s@{_EXPERIMENT}@$experiment@g" $TMPDIR'/coverage_template2.ipynb'
+sed -i "s@{_FASTQ_HEADER}@$base_fastq@g" $TMPDIR'/coverage_template2.ipynb'
+sed -i "s@{genome}@$genome@g" $TMPDIR'/coverage_template2.ipynb'
+
+
+
+jupyter nbconvert --to notebook --execute $TMPDIR'/coverage_template2.ipynb'  --ExecutePreprocessor.timeout=600
+rm $TMPDIR'/coverage_template2.ipynb'
+
+jupyter nbconvert --output-dir=$TMPDIR --to html_toc $TMPDIR'/coverage_template2.nbconvert.ipynb'
+
+
+rm -r $TMPDIR'/'$experiment'/data'
+rm -r $TMPDIR'/FastQ_Screen_Genomes'
+rm -r $TMPDIR'/genomes'
+rm -r $TMPDIR'/mylib'
+rm -r $TMPDIR'/svist4getConf'
+rm ${TMPDIR}/magick-*
+
+
+mkdir -p $experiment'/res/'
+cp  -r ${TMPDIR}/assemble_* $experiment'/res/'
+cp  -r ${TMPDIR}/coverage_* $experiment'/res/'
+cp -r static  $experiment'/res/'
+cp $TMPDIR'/'$experiment'/res.csv' $experiment'/res/'
+cp -r $TMPDIR'/'$experiment'/multi_qc' $experiment'/res/'
+
+tar -czvf $TMPDIR'/res.tar.gz' $TMPDIR'/' --remove-files
+
+cp  $TMPDIR'/res.tar' $experiment
+

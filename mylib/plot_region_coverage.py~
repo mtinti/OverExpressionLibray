@@ -76,8 +76,8 @@ def plot_region(coverage_file, ff_file, fr_file, rf_file, rr_file, chro, start, 
 
     path_tracks = os.path.join(experiment, 'reagion_tracks_'+str(peak_index))
 
-    #if not os.path.exists(path_tracks):    
-        #os.makedirs(path_tracks)
+    if not os.path.exists(path_tracks):    
+        os.makedirs(path_tracks)
 
     f = plt.figure(figsize=(16,6))
     gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
@@ -86,7 +86,7 @@ def plot_region(coverage_file, ff_file, fr_file, rf_file, rr_file, chro, start, 
 
     reagion_track = add_track(bed_file = coverage_file, chro = chro, 
               start =start, end=end, ax=ax, label='coverage',color='b', roll=False)
-    #reagion_track.to_csv(os.path.join(path_tracks,'coverage_R'+str(peak_index)),index=False)
+    reagion_track.to_csv(os.path.join(path_tracks,'coverage_R'+str(peak_index)),index=False)
 
     ax.set_ylabel('Coverage')
     axt.set_ylabel('Primer Coverage')
@@ -101,19 +101,19 @@ def plot_region(coverage_file, ff_file, fr_file, rf_file, rr_file, chro, start, 
 
     ff_track = add_track(bed_file = ff_file, chro = chro, 
               start =start, end=end, ax=axt, label='ff',color='r')
-    #ff_track.to_csv(os.path.join(path_tracks,'ff_R'+str(peak_index)),index=False)
+    ff_track.to_csv(os.path.join(path_tracks,'ff_R'+str(peak_index)),index=False)
     
     fr_track = add_track(bed_file = fr_file, chro = chro, 
               start =start, end=end, ax=axt, label='fr',color='g')
-    #fr_track.to_csv(os.path.join(path_tracks,'fr_R'+str(peak_index)),index=False)
+    fr_track.to_csv(os.path.join(path_tracks,'fr_R'+str(peak_index)),index=False)
 
     rf_track = add_track(bed_file = rf_file, chro = chro, 
               start =start, end=end, ax=axt, label='rf',color='y')
-    #rf_track.to_csv(os.path.join(path_tracks,'rf_R'+str(peak_index)),index=False)
+    rf_track.to_csv(os.path.join(path_tracks,'rf_R'+str(peak_index)),index=False)
     
     rr_track = add_track(bed_file = rr_file, chro = chro, 
               start =start, end=end, ax=axt, label='rr',color='k')
-    #rr_track.to_csv(os.path.join(path_tracks,'rr_R'+str(peak_index)),index=False)
+    rr_track.to_csv(os.path.join(path_tracks,'rr_R'+str(peak_index)),index=False)
 
     ax.legend(loc="upper left")
     
